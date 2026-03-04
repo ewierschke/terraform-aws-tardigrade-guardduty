@@ -82,7 +82,6 @@ resource "aws_guardduty_publishing_destination" "this" {
 resource "aws_guardduty_malware_protection_plan" "this" {
   for_each = var.protection_plans
 
-  region = each.value.region
   role   = each.value.role
   tags   = each.value.tags
 
@@ -114,7 +113,6 @@ resource "aws_guardduty_detector_feature" "this" {
 
   detector_id = aws_guardduty_detector.this.id
   name        = each.key
-  region      = each.value.region
   status      = each.value.status
 
   dynamic "additional_configuration" {
