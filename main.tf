@@ -13,6 +13,7 @@
 
 # Creates a GuardDuty detector for this account
 resource "aws_guardduty_detector" "this" {
+  count = var.enable ? 1: 0
   enable                       = var.enable
   finding_publishing_frequency = var.finding_publishing_frequency
 }
@@ -21,7 +22,7 @@ resource "aws_guardduty_detector" "this" {
 resource "aws_guardduty_filter" "this" {
   for_each = { for filter in var.filters : filter.name => filter }
 
-  detector_id = aws_guardduty_detector.this.id
+  detector_id = aws_guardduty_detector[0].this.id
   name        = each.value.name
   description = each.value.description
   rank        = each.value.rank
@@ -47,7 +48,7 @@ resource "aws_guardduty_filter" "this" {
 resource "aws_guardduty_ipset" "this" {
   for_each = { for ipset in var.ipsets : ipset.name => ipset }
 
-  detector_id = aws_guardduty_detector.this.id
+  detector_id = aws_guardduty_detector[0].this.id
   activate    = each.value.activate
   format      = each.value.format
   location    = each.value.location
@@ -59,7 +60,7 @@ resource "aws_guardduty_ipset" "this" {
 resource "aws_guardduty_threatintelset" "this" {
   for_each = { for threatintelset in var.threatintelsets : threatintelset.name => threatintelset }
 
-  detector_id = aws_guardduty_detector.this.id
+  detector_id = aws_guardduty_detector[0].this.id
   activate    = each.value.activate
   format      = each.value.format
   location    = each.value.location
@@ -72,7 +73,7 @@ resource "aws_guardduty_threatintelset" "this" {
 resource "aws_guardduty_publishing_destination" "this" {
   count = var.publishing_destination == null ? 0 : 1
 
-  detector_id      = aws_guardduty_detector.this.id
+  detector_id      = aws_guardduty_detector[0].this.id
   destination_arn  = var.publishing_destination.destination_arn
   kms_key_arn      = var.publishing_destination.kms_key_arn
   destination_type = "S3" # S3 is currently the only option for this
@@ -111,7 +112,7 @@ resource "aws_guardduty_malware_protection_plan" "this" {
 resource "aws_guardduty_detector_feature" "this" {
   for_each = { for name, feature in var.detector_features : name => feature if !feature.exclude }
 
-  detector_id = aws_guardduty_detector.this.id
+  detector_id = aws_guardduty_detector[0].this.id
   name        = each.key
   status      = each.value.status
 
