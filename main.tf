@@ -79,49 +79,55 @@ resource "aws_guardduty_publishing_destination" "this" {
   destination_type = "S3" # S3 is currently the only option for this
 }
 
-# Provides a resource to manage a GuardDuty malware protection plan.
-resource "aws_guardduty_malware_protection_plan" "this" {
-  for_each = var.protection_plans
+# # Provides a resource to manage a GuardDuty malware protection plan.
+# resource "aws_guardduty_malware_protection_plan" "this" {
+#   for_each = var.protection_plans
 
-  role   = each.value.role
-  tags   = each.value.tags
+#   role   = each.value.role
+#   tags   = each.value.tags
 
-  protected_resource {
-    s3_bucket {
-      bucket_name     = each.value.protected_resource.s3_bucket.bucket_name
-      object_prefixes = each.value.protected_resource.s3_bucket.object_prefixes
-    }
-  }
+#   protected_resource {
+#     s3_bucket {
+#       bucket_name     = each.value.protected_resource.s3_bucket.bucket_name
+#       object_prefixes = each.value.protected_resource.s3_bucket.object_prefixes
+#     }
+#   }
 
-  dynamic "actions" {
-    for_each = each.value.actions != null ? [each.value.actions] : []
+#   dynamic "actions" {
+#     for_each = each.value.actions != null ? [each.value.actions] : []
 
-    content {
-      dynamic "tagging" {
-        for_each = actions.value.tagging != null ? [actions.value.tagging] : []
+#     content {
+#       dynamic "tagging" {
+#         for_each = actions.value.tagging != null ? [actions.value.tagging] : []
 
-        content {
-          status = tagging.value.status
-        }
-      }
-    }
-  }
+#         content {
+#           status = tagging.value.status
+#         }
+#       }
+#     }
+#   }
+# }
+
+module "malware_protection_plan" {
+  source = "./modules/malware_protection_plan"
+
+  protection_plans = var.protection_plans
 }
 
 # Creates one or more GuardDuty Detector Features
-#resource "aws_guardduty_detector_feature" "this" {
-#  for_each = { for name, feature in var.detector_features : name => feature if !feature.exclude }
+resource "aws_guardduty_detector_feature" "this" {
+ for_each = { for name, feature in var.detector_features : name => feature if !feature.exclude }
 
-#  detector_id = aws_guardduty_detector.this[0].id
-#  name        = each.key
-#  status      = each.value.status
+ detector_id = aws_guardduty_detector.this[0].id
+ name        = each.key
+ status      = each.value.status
 
-#  dynamic "additional_configuration" {
-#    for_each = try(each.value.additional_configuration, {})
+ dynamic "additional_configuration" {
+   for_each = try(each.value.additional_configuration, {})
 
-#    content {
-#      name   = additional_configuration.key
-#      status = additional_configuration.value.status
-#    }
-#  }
-#}
+   content {
+     name   = additional_configuration.key
+     status = additional_configuration.value.status
+   }
+ }
+}
